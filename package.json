@@ -1,14 +1,13 @@
 {
   "name": "serenity-vr-signaling",
-  "version": "2.0.0",
-  "description": "NAF + EasyRTC signaling server for Serenity VR",
+  "version": "3.0.0",
+  "description": "NAF signaling server for Serenity VR",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^2.5.0",
-    "open-easyrtc": "^2.0.0"
+    "socket.io": "^4.6.1"
   }
 }
