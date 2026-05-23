@@ -1,42 +1,38 @@
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
+const socketio = require("socket.io");
+const easyrtc = require("open-easyrtc");
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
+const httpServer = http.createServer(app);
+
+const io = socketio(httpServer, {
   cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
 app.get("/", (req, res) => {
-  res.send("Serenity VR Signaling Server — Running");
+  res.send("NAF + EasyRTC signaling server is running.");
 });
 
-// Networked-Aframe signaling
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
-  socket.on("joinRoom", (data) => {
-    socket.join(data.room);
-    socket.to(data.room).emit("userJoined", { id: socket.id });
-    console.log(`${socket.id} joined room: ${data.room}`);
-  });
+easyrtc.setOption("logLevel", "warning");
+easyrtc.setOption("demosEnable", false);
 
-  socket.on("send", (data) => {
-    socket.to(data.room).emit("receive", data);
+easyrtc.listen(app, io, null, (err, rtcRef) => {
+  if (err) {
+    console.error("EasyRTC error:", err);
+    return;
+  }
+  rtcRef.events.on("easyrtcAuth", (socket, easyrtcid, msg, msgCallback, next) => {
+    next(null, socket, easyrtcid, msg, msgCallback);
   });
-
-  socket.on("broadcast", (data) => {
-    socket.broadcast.to(data.room).emit("receive", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-    io.emit("userLeft", { id: socket.id });
-  });
+  console.log("EasyRTC signaling server ready.");
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Serenity signaling server running on port ${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`Serenity VR signaling server running on port ${PORT}`);
 });
